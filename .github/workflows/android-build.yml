@@ -1,34 +1,32 @@
-name: Build Android APK on macOS
+name: Interactive macOS Build with VNC
 
 on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:      # Mengizinkan Anda menjalankan build secara manual kapan saja
+  workflow_dispatch: # Allows you to trigger this manually when you are ready
 
 jobs:
   build:
-    runs-on: macos-14      # Menggunakan server macOS Sonoma (Gratis tier private)
-    timeout-minutes: 15
+    runs-on: macos-14
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
+    - name: Connect to Tailscale Network
+      uses: tailscale/github-action@v2
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }} # Connects the cloud Mac to your dashboard
 
-    - name: Build APK
+    - name: Setup and Start Apple VNC Server
       run: |
-        # Folder dummy untuk simulasi hasil build APK di macOS cloud
-        mkdir -p app/build/outputs/apk/debug/
-        echo "This is a dummy APK generated on macOS cloud" > app/build/outputs/apk/debug/app-debug.apk
+        # Enables the official built-in Apple Remote Desktop server
+        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+          -activate -configure -access -on \
+          -clientopts -setvncpasswd -vncpasswd "password123" \
+          -restart -agent -privs -all
+        echo "VNC Server is running on port 5900 with password: password123"
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug-macos
-        path: app/build/outputs/apk/debug/*.apk
-        retention-days: 7
+    - name: Keep Cloud Mac Alive For Testing
+      run: |
+        echo "The Mac is online! Check your Tailscale Admin Console for the new IP."
+        echo "Connect using TigerVNC Viewer to IP:5900"
+        sleep 1800 # Forces the server to stay completely online for 30 minutes
