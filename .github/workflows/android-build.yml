@@ -1,43 +1,41 @@
 name: Interactive macOS Build with VNC
-
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:      # Mengizinkan Anda menjalankan build secara manual kapan saja
+  workflow_dispatch: # Allow manual runs anytime
 
 jobs:
   build:
     runs-on: macos-14
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Install and Connect Tailscale on Mac
-      env:
-        TS_KEY: ${{ secrets.TAILSCALE_AUTHKEY }}
-      run: |
-        # Memasang aplikasi Tailscale versi resmi via Homebrew khusus macOS
-        brew install tailscale
-        
-        # Menghidupkan servis latar belakang Tailscale di macOS
-        sudo tailscaled --state=tailscaled.state &
-        sleep 5
-        
-        # Melakukan koneksi autentikasi ke dasbor jaringan Anda
-        sudo tailscale up --authkey=$TS_KEY --accept-routes
+      - name: Install and Connect Tailscale on Mac
+        env:
+          TS_KEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+        run: |
+          # Install official Tailscale app via Homebrew
+          brew install tailscale
 
-    - name: Setup and Start Apple VNC Server
-      run: |
-        # Mengaktifkan server Remote Desktop bawaan resmi dari Apple
-        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-          -activate -configure -access -on \
-          -clientopts -setvncpasswd -vncpasswd "password123" \
-          -restart -agent -privs -all
-        echo "VNC Server is running on port 5900 with password: password123"
+          # Start the Tailscale background service
+          sudo tailscaled --state=tailscaled.state & sleep 5
 
-    - name: Keep Cloud Mac Alive For Testing
-      run: |
-        echo "The Mac is online! Check your Tailscale Admin Console for the new IP."
-        echo "Connect using TigerVNC Viewer to IP:5900"
-        sleep 1800 # Menahan server agar tetap hidup selama 30 menit demi pengetesan Anda
+          # Authenticate and connect to your tailnet
+          sudo tailscale up --authkey=$TS_KEY --accept-routes
+
+      - name: Setup and Start Apple VNC Server
+        run: |
+          # Enable Apple Remote Desktop (built-in VNC server)
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -activate -configure -access -on \
+            -clientopts -setvncpasswd -vncpasswd "password123" \
+            -restart -agent -privs -all
+
+          echo "VNC Server is running on port 5900 with password: password123"
+
+      - name: Keep Cloud Mac Alive For Testing
+        run: |
+          echo "The Mac is online! Check your Tailscale Admin Console for the new IP."
+          echo "Connect using TigerVNC Viewer to IP:5900"
+          sleep 7200 # Keep alive for 2 hours (7200 seconds)
