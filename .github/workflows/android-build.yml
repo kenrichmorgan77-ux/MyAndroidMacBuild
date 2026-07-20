@@ -3,6 +3,8 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch: # Allow manual runs anytime
+  schedule:
+    - cron: "0 */6 * * *" # Auto-rerun every 6 hours
 
 jobs:
   build:
@@ -38,4 +40,4 @@ jobs:
         run: |
           echo "The Mac is online! Check your Tailscale Admin Console for the new IP."
           echo "Connect using TigerVNC Viewer to IP:5900"
-          sleep 7200 # Keep alive for 2 hours (7200 seconds)
+          sleep 21600 # Keep alive for 6 hours (max allowed)
