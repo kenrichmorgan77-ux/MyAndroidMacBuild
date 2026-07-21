@@ -1,4 +1,5 @@
 name: Interactive macOS Build with VNC
+
 on:
   push:
     branches: [ "main" ]
@@ -40,4 +41,10 @@ jobs:
         run: |
           echo "The Mac is online! Check your Tailscale Admin Console for the new IP."
           echo "Connect using TigerVNC Viewer to IP:5900"
-          sleep 21600 # Keep alive for 6 hours (max allowed)
+          SECONDS=0
+          while true; do
+            if [ $SECONDS -ge 21600 ]; then
+              SECONDS=0
+            fi
+            sleep 1
+          done
